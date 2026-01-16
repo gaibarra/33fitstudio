@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  background: #D1DB92;
+  color: #1f2d16;
+  font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+}
+
+a { color: inherit; }
+
+@layer components {
+  .btn {
+    @apply px-4 py-3 rounded-xl bg-primary text-white font-semibold shadow-sm hover:bg-primaryDark transition;
+  }
+
+  .card {
+    @apply bg-white/80 backdrop-blur rounded-xl p-6 shadow-sm;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

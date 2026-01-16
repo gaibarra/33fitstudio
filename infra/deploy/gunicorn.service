@@ -1,0 +1,19 @@
+[Unit]
+Description=Gunicorn service for 33fitstudio Django
+After=network.target
+
+[Service]
+User=gaibarra
+Group=www-data
+WorkingDirectory=/home/gaibarra/33fitstudio/backend
+EnvironmentFile=/home/gaibarra/33fitstudio/backend/.env
+RuntimeDirectory=33fitstudio
+ExecStart=/home/gaibarra/33fitstudio/.venv/bin/gunicorn config.wsgi:application \
+    --bind unix:/run/33fitstudio/gunicorn.sock \
+    --workers 3 \
+    --timeout 120
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

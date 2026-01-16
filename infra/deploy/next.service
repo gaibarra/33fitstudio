@@ -1,0 +1,15 @@
+[Unit]
+Description=Next.js frontend for 33fitstudio
+After=network.target
+
+[Service]
+Type=simple
+User=gaibarra
+WorkingDirectory=/home/gaibarra/33fitstudio/frontend
+Environment=NODE_ENV=production
+ExecStart=/home/gaibarra/.nvm/versions/node/v20.18.0/bin/npm run start -- --hostname 127.0.0.1 --port 3030
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
