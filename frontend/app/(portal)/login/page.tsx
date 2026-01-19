@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       const me = await apiFetch('/api/auth/me/');
       const roles: string[] = me?.roles || [];
-      const destination = roles.includes('admin') || roles.includes('staff') ? '/admin' : '/clases';
+      const destination = roles.includes('admin') || roles.includes('staff') ? '/admin' : '/';
 
       await Swal.fire({
         icon: 'success',

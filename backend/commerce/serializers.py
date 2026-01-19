@@ -2,10 +2,12 @@ from rest_framework import serializers
 from .models import Order, OrderItem, UserCredit, UserMembership
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'quantity', 'unit_price_cents', 'line_total_cents']
-        read_only_fields = ['id', 'unit_price_cents', 'line_total_cents']
+        fields = ['id', 'product', 'product_name', 'quantity', 'unit_price_cents', 'line_total_cents']
+        read_only_fields = ['id', 'unit_price_cents', 'line_total_cents', 'product_name']
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)

@@ -1,6 +1,6 @@
 import requests
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction, models
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from catalog.models import Product
@@ -119,6 +119,10 @@ def create_mp_preference(*, order: Order, success_url: str, failure_url: str, no
         raise ValidationError('Mercado Pago no está configurado (falta MP_ACCESS_TOKEN).')
     if order.status != Order.OrderStatus.PENDING:
         raise ValidationError('La orden debe estar pendiente para generar link de pago.')
+
+    # Permite configurar un webhook fijo desde settings cuando no se envía explícito
+    if not notification_url:
+        notification_url = getattr(settings, 'MP_NOTIFICATION_URL', None)
 
     headers = {
         'Authorization': f'Bearer {access_token}',

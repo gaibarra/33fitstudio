@@ -3,7 +3,6 @@ import Link from 'next/link';
 const cards = [
   { href: '/admin/catalogo', title: 'Catálogo', desc: 'Clases, coaches, productos.' },
   { href: '/admin/agenda', title: 'Agenda', desc: 'Programar sesiones y revisar capacidad.' },
-  { href: '/admin/bio', title: 'Bio-Link', desc: 'Botones y tracking de clics.' },
   { href: '/admin/reportes', title: 'Reportes', desc: 'Ocupación, ingresos, no-shows.' },
 ];
 

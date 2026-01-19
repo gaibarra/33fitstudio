@@ -105,3 +105,44 @@ class AuthAndBookingTests(APITestCase):
         self.assertEqual(cancel_resp.status_code, 200)
         booking2.refresh_from_db()
         self.assertEqual(booking2.status, Booking.BookingStatus.BOOKED)
+
+    def test_booking_does_not_exceed_capacity(self):
+        class_type = ClassType.objects.create(studio=self.studio, name='Clase Cap', duration_minutes=60)
+        session = Session.objects.create(
+            studio=self.studio,
+            class_type=class_type,
+            starts_at=timezone.now() + timedelta(hours=4),
+            capacity=2,
+        )
+
+        users = [
+            User.objects.create_user(email='cap1@example.com', password='pass'),
+            User.objects.create_user(email='cap2@example.com', password='pass'),
+            User.objects.create_user(email='cap3@example.com', password='pass'),
+        ]
+
+        for idx, user in enumerate(users):
+            self.client.force_authenticate(user=user)
+            resp = self.client.post('/api/scheduling/bookings/', {'session': str(session.id)})
+            self.assertEqual(resp.status_code, 201)
+            expected_status = Booking.BookingStatus.BOOKED if idx < session.capacity else Booking.BookingStatus.WAITLIST
+            self.assertEqual(resp.data['status'], expected_status)
+
+        booked_count = Booking.objects.filter(session=session, status=Booking.BookingStatus.BOOKED).count()
+        self.assertEqual(booked_count, session.capacity)
+
+    def test_booking_rejects_cross_studio_session(self):
+        other_studio = Studio.objects.create(name='Other Studio', brand_json={})
+        class_type = ClassType.objects.create(studio=other_studio, name='Clase Ajena', duration_minutes=45)
+        foreign_session = Session.objects.create(
+            studio=other_studio,
+            class_type=class_type,
+            starts_at=timezone.now() + timedelta(hours=3),
+            capacity=5,
+        )
+
+        user = User.objects.create_user(email='tenant@example.com', password='pass')
+        self.client.force_authenticate(user=user)
+        resp = self.client.post('/api/scheduling/bookings/', {'session': str(foreign_session.id)})
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(Booking.objects.count(), 0)

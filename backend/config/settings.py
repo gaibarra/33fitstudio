@@ -142,6 +142,9 @@ CORS_ALLOW_ALL_ORIGINS = not CORS_ALLOWED_ORIGINS
 CORS_ALLOW_HEADERS = list(default_headers) + ['x-studio-id']
 
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+MP_ACCESS_TOKEN = os.environ.get('MP_ACCESS_TOKEN')
+MP_NOTIFICATION_URL = os.environ.get('MP_NOTIFICATION_URL')
+MP_WEBHOOK_SECRET = os.environ.get('MP_WEBHOOK_SECRET')
 
 LOGGING = {
     'version': 1,

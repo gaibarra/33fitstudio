@@ -8,10 +8,16 @@ class SessionSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'studio', 'status', 'created_at']
 
 class BookingSerializer(serializers.ModelSerializer):
+    session_starts_at = serializers.DateTimeField(source='session.starts_at', read_only=True)
+    session_class_name = serializers.CharField(source='session.class_type.name', read_only=True)
+
     class Meta:
         model = Booking
-        fields = ['id', 'studio', 'session', 'user', 'status', 'booked_at', 'cancelled_at', 'source', 'credit', 'membership', 'created_at']
-        read_only_fields = ['id', 'studio', 'status', 'booked_at', 'cancelled_at', 'credit', 'membership', 'created_at']
+        fields = [
+            'id', 'studio', 'session', 'user', 'status', 'booked_at', 'cancelled_at', 'source', 'credit', 'membership', 'created_at',
+            'session_starts_at', 'session_class_name'
+        ]
+        read_only_fields = ['id', 'studio', 'status', 'booked_at', 'cancelled_at', 'credit', 'membership', 'created_at', 'session_starts_at', 'session_class_name']
 
 class WaitlistEntrySerializer(serializers.ModelSerializer):
     class Meta:

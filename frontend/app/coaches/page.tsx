@@ -18,6 +18,12 @@ export default function Coaches() {
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('access') : null;
+    if (!token) {
+      await Swal.fire({ icon: 'warning', title: 'Inicia sesión', text: 'Ingresa para ver los coaches.' });
+      router.push('/portal');
+      return;
+    }
     try {
       setLoading(true);
       const data = await apiFetch('/api/catalog/instructors/');

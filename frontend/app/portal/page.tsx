@@ -31,7 +31,7 @@ export default function Portal() {
       const me = await apiFetch('/api/auth/me/');
       const roles: string[] = Array.isArray(me?.roles) ? me.roles : [];
       const isAdmin = roles.includes('admin') || roles.includes('staff');
-      const destination = isAdmin ? '/admin' : '/clases';
+      const destination = isAdmin ? '/admin' : '/';
       await Swal.fire({
         icon: 'success',
         title: 'Bienvenido',

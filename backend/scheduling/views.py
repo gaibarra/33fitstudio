@@ -23,6 +23,18 @@ class SessionViewSet(viewsets.ModelViewSet):
         start_gte = self.request.query_params.get('start_gte')
         if start_gte:
             qs = qs.filter(starts_at__gte=start_gte)
+
+        exact_date = self.request.query_params.get('date')
+        if exact_date:
+            qs = qs.filter(starts_at__date=exact_date)
+
+        date_gte = self.request.query_params.get('starts_at__date__gte')
+        if date_gte:
+            qs = qs.filter(starts_at__date__gte=date_gte)
+
+        date_lte = self.request.query_params.get('starts_at__date__lte')
+        if date_lte:
+            qs = qs.filter(starts_at__date__lte=date_lte)
         return qs
 
     def perform_create(self, serializer):

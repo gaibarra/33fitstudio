@@ -37,7 +37,16 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
       error.status = res.status;
       throw error;
     }
-    return res.json();
+    // Handle empty responses (e.g., 204 No Content)
+    if (res.status === 204) return null;
+    const raw = await res.text();
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      // If not JSON, return plain text
+      return raw;
+    }
   } finally {
     clearTimeout(timeout);
   }
