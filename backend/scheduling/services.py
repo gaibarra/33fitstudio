@@ -81,6 +81,11 @@ def book_session(*, studio, session: Session, user, source='web') -> Booking:
         source=source,
     )
     log_action(studio, user, 'booking_created', 'session', session.id, {'source': source})
+    
+    # Send confirmation email async
+    from notifications.tasks import send_booking_confirmation
+    send_booking_confirmation.delay(str(booking.id))
+    
     return booking
 
 @transaction.atomic
@@ -97,6 +102,19 @@ def cancel_booking(*, booking: Booking, actor=None):
         ))
     promote_waitlist(booking.session)
     log_action(booking.studio, actor or booking.user, 'booking_cancelled', 'booking', booking.id)
+    
+    # Send cancellation email async
+    from notifications.tasks import send_cancellation_email
+    session = booking.session
+    send_cancellation_email.delay(
+        str(booking.id),
+        booking.user.email,
+        booking.user.full_name,
+        session.class_type.name if session.class_type else 'Clase',
+        session.starts_at.strftime('%A %d de %B a las %H:%M'),
+        session.studio.name if session.studio else '33 F/T Studio'
+    )
+    
     return booking
 
 @transaction.atomic
@@ -117,6 +135,11 @@ def promote_waitlist(session: Session):
         booking.credit = credit
         booking.membership = membership
         booking.save(update_fields=['status', 'credit', 'membership'])
+        
+        # Send confirmation for promoted booking
+        from notifications.tasks import send_booking_confirmation
+        send_booking_confirmation.delay(str(booking.id))
+        
     entry.delete()
     log_action(session.studio, entry.user, 'waitlist_promoted', 'session', session.id)
     return booking

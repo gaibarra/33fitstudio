@@ -31,7 +31,7 @@ export default function Portal() {
       const me = await apiFetch('/api/auth/me/');
       const roles: string[] = Array.isArray(me?.roles) ? me.roles : [];
       const isAdmin = roles.includes('admin') || roles.includes('staff');
-      const destination = isAdmin ? '/admin' : '/';
+      const destination = isAdmin ? '/admin' : '/portal/dashboard';
       await Swal.fire({
         icon: 'success',
         title: 'Bienvenido',
@@ -48,18 +48,18 @@ export default function Portal() {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center">
-      <main className="card space-y-4 w-full max-w-md text-center">
+      <main className="card space-y-5 w-full max-w-md text-center">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Bienvenido a 33 F/T Studio</h1>
           <p className="text-sm text-slate-700">Accede a tu cuenta o crea una nueva.</p>
         </div>
-        <input className="w-full rounded-xl border border-primary/40 px-3 py-2" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input className="w-full rounded-xl border border-primary/40 px-3 py-2" placeholder="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <div className="flex gap-3 justify-center">
-          <button type="button" className="btn disabled:opacity-50" onClick={handleLogin} disabled={loading !== null}>
+        <input className="w-full rounded-xl border border-primary/40 px-3 py-2 text-base" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input className="w-full rounded-xl border border-primary/40 px-3 py-2 text-base" placeholder="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <button type="button" className="btn w-full sm:w-auto disabled:opacity-50" onClick={handleLogin} disabled={loading !== null}>
             {loading === 'login' ? 'Ingresando…' : 'Ingresar'}
           </button>
-          <button type="button" className="btn bg-accent text-slate-900 hover:bg-[#f7df5f] disabled:opacity-50" onClick={handleRegister} disabled={loading !== null}>
+          <button type="button" className="btn w-full sm:w-auto bg-accent text-slate-900 hover:bg-[#f7df5f] disabled:opacity-50" onClick={handleRegister} disabled={loading !== null}>
             Crear cuenta
           </button>
         </div>

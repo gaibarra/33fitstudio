@@ -20,11 +20,11 @@ export default function BioAdmin() {
   };
 
   return (
-    <main className="card space-y-4 max-w-lg">
+    <main className="card space-y-4 max-w-lg mx-auto">
       <h1 className="text-2xl font-semibold">Bio-Link</h1>
-      <input className="w-full rounded-xl border border-primary/40 px-3 py-2" placeholder="Etiqueta" value={label} onChange={(e) => setLabel(e.target.value)} />
-      <input className="w-full rounded-xl border border-primary/40 px-3 py-2" placeholder="URL" value={url} onChange={(e) => setUrl(e.target.value)} />
-      <select className="w-full rounded-xl border border-primary/40 px-3 py-2" value={kind} onChange={(e) => setKind(e.target.value)}>
+      <input className="w-full rounded-xl border border-primary/40 px-3 py-2 text-base" placeholder="Etiqueta" value={label} onChange={(e) => setLabel(e.target.value)} />
+      <input className="w-full rounded-xl border border-primary/40 px-3 py-2 text-base" placeholder="URL" value={url} onChange={(e) => setUrl(e.target.value)} />
+      <select className="w-full rounded-xl border border-primary/40 px-3 py-2 text-base" value={kind} onChange={(e) => setKind(e.target.value)}>
         <option value="reservar">Reservar</option>
         <option value="comprar">Comprar</option>
         <option value="whatsapp">WhatsApp</option>
@@ -33,7 +33,7 @@ export default function BioAdmin() {
         <option value="sitio">Sitio</option>
         <option value="custom">Custom</option>
       </select>
-      <button className="btn" onClick={saveButton}>Guardar</button>
+      <button className="btn w-full sm:w-auto" onClick={saveButton}>Guardar</button>
       {message && <p className="text-sm text-slate-700">{message}</p>}
     </main>
   );

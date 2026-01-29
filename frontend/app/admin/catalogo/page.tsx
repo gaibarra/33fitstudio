@@ -12,7 +12,7 @@ export default function CatalogoAdmin() {
     <main className="card space-y-4">
       <h1 className="text-2xl font-semibold">Catálogos</h1>
       <p className="text-sm text-slate-700">Administra cada catálogo en su propia pantalla.</p>
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <Link key={c.href} href={c.href} className="card hover:shadow-md transition border border-primary/10 space-y-2">
             <div className="text-lg font-semibold">{c.title}</div>

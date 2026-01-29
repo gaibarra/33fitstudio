@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.db import transaction
 from .models import Session, Booking, WaitlistEntry, Checkin
 from .serializers import SessionSerializer, BookingSerializer, WaitlistEntrySerializer, CheckinSerializer
 from .services import book_session, cancel_booking
@@ -40,6 +41,18 @@ class SessionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(studio=self.request.studio)
 
+    @action(detail=True, methods=['get'], permission_classes=[IsStaff | IsAdmin])
+    def bookings(self, request, pk=None):
+        """Get all bookings for a specific session (for attendance list)"""
+        session = self.get_object()
+        bookings = Booking.objects.filter(
+            session=session
+        ).exclude(
+            status=Booking.BookingStatus.CANCELLED
+        ).select_related('user', 'session__class_type').prefetch_related('checkin')
+        serializer = BookingSerializer(bookings, many=True)
+        return Response(serializer.data)
+
 class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -48,7 +61,10 @@ class BookingViewSet(viewsets.ModelViewSet):
         studio = self.request.studio
         if not studio:
             return Booking.objects.none()
-        return Booking.objects.filter(studio=studio, user=self.request.user)
+        # Staff/Admin can see all bookings, regular users only their own
+        if self.request.user.is_staff or self.request.user.has_role('admin') or self.request.user.has_role('staff'):
+            return Booking.objects.filter(studio=studio).select_related('user', 'session__class_type').prefetch_related('checkin')
+        return Booking.objects.filter(studio=studio, user=self.request.user).select_related('user', 'session__class_type').prefetch_related('checkin')
 
     def create(self, request, *args, **kwargs):
         # Admin/staff users should not create client bookings
@@ -74,6 +90,16 @@ class BookingViewSet(viewsets.ModelViewSet):
         cancel_booking(booking=booking, actor=request.user)
         return Response({'detail': 'Reserva cancelada'})
 
+    @action(detail=True, methods=['post'], permission_classes=[IsStaff | IsAdmin])
+    def mark_no_show(self, request, pk=None):
+        """Mark a booking as no-show"""
+        booking = Booking.objects.filter(pk=pk, studio=request.studio).first()
+        if not booking:
+            return Response({'detail': 'Reserva no encontrada'}, status=404)
+        booking.status = Booking.BookingStatus.NO_SHOW
+        booking.save(update_fields=['status'])
+        return Response({'detail': 'Marcado como no-show'})
+
 class WaitlistEntryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = WaitlistEntrySerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -92,7 +118,19 @@ class CheckinViewSet(viewsets.ModelViewSet):
         studio = self.request.studio
         if not studio:
             return Checkin.objects.none()
-        return Checkin.objects.filter(studio=studio)
+        return Checkin.objects.filter(studio=studio).select_related('booking__user', 'booking__session')
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        serializer.save(studio=self.request.studio, checked_in_at=timezone.now())
+        checkin = serializer.save(studio=self.request.studio, checked_in_at=timezone.now())
+        # Also mark the booking as attended
+        booking = checkin.booking
+        booking.status = Booking.BookingStatus.ATTENDED
+        booking.save(update_fields=['status'])
+
+    def perform_destroy(self, instance):
+        # Revert booking status when check-in is deleted
+        booking = instance.booking
+        booking.status = Booking.BookingStatus.BOOKED
+        booking.save(update_fields=['status'])
+        instance.delete()

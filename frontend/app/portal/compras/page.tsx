@@ -24,15 +24,7 @@ type Order = {
   provider_ref?: string | null;
   paid_at?: string | null;
   created_at?: string;
-  items?: Array<{ id: string; product: string; product_name?: string; quantity: number; unit_price_cents: number; line_total_cents: number }>;
-};
-
-type Booking = {
-  id: string;
-  status: string;
-  session: string;
-  session_starts_at?: string;
-  session_class_name?: string;
+  items?: Array<{ id: string; product: string; quantity: number; unit_price_cents: number; line_total_cents: number }>;
 };
 
 type Balance = {
@@ -55,13 +47,11 @@ export default function Compras() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [memberships, setMemberships] = useState<any[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [provider, setProvider] = useState('manual');
   const [providerRef, setProviderRef] = useState('');
   const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   const load = useCallback(async () => {
@@ -76,26 +66,22 @@ export default function Compras() {
       const prods = await apiFetch('/api/catalog/products/');
       const prodList = Array.isArray(prods) ? prods : prods?.results || [];
 
-      const [ordsRes, balRes, memsRes, bksRes] = await Promise.allSettled([
+      const [ordsRes, balRes, memsRes] = await Promise.allSettled([
         apiFetch('/api/commerce/orders/'),
         apiFetch('/api/commerce/credits/balance/'),
         apiFetch('/api/commerce/memberships/'),
-        apiFetch('/api/scheduling/bookings/'),
       ]);
 
       const ords = ordsRes.status === 'fulfilled' ? ordsRes.value : [];
       const bal = balRes.status === 'fulfilled' ? balRes.value : null;
       const mems = memsRes.status === 'fulfilled' ? memsRes.value : [];
-      const bks = bksRes.status === 'fulfilled' ? bksRes.value : [];
 
       const ordList = Array.isArray(ords) ? ords : ords?.results || [];
       const memList = Array.isArray(mems) ? mems : mems?.results || [];
-      const bksList = Array.isArray(bks) ? bks : bks?.results || [];
       setProducts(prodList);
       setOrders(ordList);
       setBalance(bal || null);
       setMemberships(memList);
-      setBookings(bksList);
       if (!selectedProduct) {
         const pre = params.get('product');
         if (pre && prodList.some((p: Product) => p.id === pre)) setSelectedProduct(pre);
@@ -119,39 +105,7 @@ export default function Compras() {
     load();
   }, [load]);
 
-  useEffect(() => {
-    const paymentStatus = params.get('payment');
-    const orderId = params.get('order');
-    if (!paymentStatus) return;
-    if (paymentStatus === 'mp_success') {
-      Swal.fire({ icon: 'success', title: 'Pago aprobado', text: 'Tu orden fue pagada en Mercado Pago.' });
-    } else if (paymentStatus === 'mp_failed') {
-      Swal.fire({ icon: 'error', title: 'Pago no completado', text: 'No se pudo completar el pago en Mercado Pago.' });
-    }
-    load();
-    router.replace('/portal/compras');
-  }, [load, params, router]);
-
   const selectedProductObj = useMemo(() => products.find((p) => p.id === selectedProduct), [products, selectedProduct]);
-
-  const paidOrders = useMemo(() => orders.filter((o) => o.status === 'paid'), [orders]);
-  const purchasedProductIds = useMemo(() => {
-    const set = new Set<string>();
-    paidOrders.forEach((o) => {
-      (o.items || []).forEach((it) => {
-        if (it.product) set.add(it.product);
-      });
-    });
-    return set;
-  }, [paidOrders]);
-  const canBookAnyProduct = useMemo(() => {
-    // Crédito suelto o membresía activa permiten reservar cualquier clase
-    return (balance?.credits_available || 0) > 0 || !!balance?.has_active_membership;
-  }, [balance]);
-  const hasFutureBooking = useMemo(() => {
-    const now = new Date();
-    return bookings.some((b) => b.status === 'booked' && b.session_starts_at && new Date(b.session_starts_at) > now);
-  }, [bookings]);
 
   const formatMoney = (cents: number, currency?: string) => `${currency || 'MXN'} $${(cents || 0) / 100}`;
 
@@ -172,7 +126,7 @@ export default function Compras() {
     }
     try {
       setLoading(true);
-      const order = await apiFetch('/api/commerce/orders/', {
+      await apiFetch('/api/commerce/orders/', {
         method: 'POST',
         body: JSON.stringify({
           items: [{ product: selectedProductObj.id, quantity }],
@@ -180,20 +134,11 @@ export default function Compras() {
           provider_ref: providerRef || undefined,
         }),
       });
-      if (provider === 'mercadopago') {
-        const link = await apiFetch(`/api/commerce/orders/${order.id}/mp_link/`, { method: 'POST' });
-        if (link?.init_point) {
-          window.location.href = link.init_point;
-          return;
-        }
-        await Swal.fire({ icon: 'error', title: 'No se pudo iniciar pago', text: 'Intenta nuevamente o usa otro método.' });
-      } else {
-        await Swal.fire({
-          icon: 'success',
-          title: 'Orden creada',
-          text: 'Quedó pendiente para validación del equipo. Se activará al confirmarla.',
-        });
-      }
+      await Swal.fire({
+        icon: 'success',
+        title: 'Orden creada',
+        text: 'Quedó pendiente para validación del equipo. Se activará al confirmarla.',
+      });
       setProvider('manual');
       setProviderRef('');
       setQuantity(1);
@@ -202,29 +147,6 @@ export default function Compras() {
       await Swal.fire({ icon: 'error', title: 'No se pudo completar la compra', text: err?.message || 'Inténtalo más tarde.' });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async (orderId: string) => {
-    const confirm = await Swal.fire({
-      icon: 'question',
-      title: '¿Eliminar orden pendiente?',
-      text: 'Esta orden se eliminará y no se podrá recuperar.',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-    });
-    if (!confirm.isConfirmed) return;
-
-    try {
-      setDeletingId(orderId);
-      await apiFetch(`/api/commerce/orders/${orderId}/`, { method: 'DELETE' });
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
-      await Swal.fire({ icon: 'success', title: 'Orden eliminada', text: 'Se quitó la orden pendiente.' });
-    } catch (err: any) {
-      await Swal.fire({ icon: 'error', title: 'No se pudo eliminar', text: err?.message || 'Inténtalo más tarde.' });
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -256,7 +178,7 @@ export default function Compras() {
           <label className="space-y-1 text-sm text-slate-700">
             <span className="text-xs uppercase text-slate-500">Producto</span>
             <select
-              className="w-full rounded-xl border border-slate-200 px-3 py-2"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
               value={selectedProduct}
               onChange={(e) => setSelectedProduct(e.target.value)}
             >
@@ -271,7 +193,7 @@ export default function Compras() {
           <label className="space-y-1 text-sm text-slate-700">
             <span className="text-xs uppercase text-slate-500">Cantidad</span>
             <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
               type="number"
               min={1}
               value={quantity}
@@ -281,22 +203,20 @@ export default function Compras() {
           <label className="space-y-1 text-sm text-slate-700">
             <span className="text-xs uppercase text-slate-500">Forma de pago</span>
             <select
-              className="w-full rounded-xl border border-slate-200 px-3 py-2"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
             >
-              <option value="mercadopago">Mercado Pago (en línea)</option>
               <option value="manual">Manual / mostrador</option>
               <option value="transferencia">Transferencia</option>
               <option value="efectivo">Efectivo</option>
               <option value="otro">Otro</option>
             </select>
-            {provider === 'mercadopago' && <span className="text-xs text-slate-500">Te redirigiremos a Mercado Pago para completar el pago.</span>}
           </label>
           <label className="space-y-1 text-sm text-slate-700">
             <span className="text-xs uppercase text-slate-500">Referencia (opcional)</span>
             <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
               placeholder="Folio o nota"
               value={providerRef}
               onChange={(e) => setProviderRef(e.target.value)}
@@ -316,72 +236,19 @@ export default function Compras() {
             <p className="text-sm text-slate-700">{entitlementSummary}</p>
           </div>
 
-          <div className="p-4 rounded-xl border border-primary/20 bg-white/70 space-y-3">
-            <p className="font-semibold">Estado por producto</p>
-            {canBookAnyProduct && (
-              <p className="text-xs text-slate-600">Tienes créditos o membresía activa: puedes reservar cualquier clase disponible.</p>
-            )}
-            <div className="grid md:grid-cols-2 gap-3">
-              {products.map((p) => {
-                const boughtSpecific = purchasedProductIds.has(p.id);
-                const availableByCredits = !boughtSpecific && canBookAnyProduct;
-                const bought = boughtSpecific || availableByCredits;
-                const reserved = bought && hasFutureBooking;
-                return (
-                  <div key={p.id} className="border border-slate-200 rounded-lg p-3 space-y-1 text-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="font-semibold">{p.name}</div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${boughtSpecific ? 'bg-emerald-100 text-emerald-800' : availableByCredits ? 'bg-sky-100 text-sky-800' : 'bg-slate-200 text-slate-700'}`}>
-                        {boughtSpecific ? 'Comprado' : availableByCredits ? 'Disponible con créditos' : 'Sin compra'}
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-600">Tipo: {typeLabel[p.type] || p.type}</div>
-                    {bought && (
-                      <div className="flex items-center justify-between gap-2 text-xs">
-                        <span>{reserved ? 'Ya tienes una reserva próxima' : boughtSpecific ? 'Compra activa sin reserva' : 'Tienes créditos para reservar'}</span>
-                        {!reserved && (
-                          <button
-                            type="button"
-                            className="text-primary hover:underline"
-                            onClick={() => router.push('/horarios')}
-                          >
-                            Reservar
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {products.length === 0 && <p className="text-xs text-slate-600">No hay productos.</p>}
-            </div>
-          </div>
-
           <div className="space-y-2">
             <p className="font-semibold">Tus compras</p>
-            <div className="grid md:grid-cols-2 gap-3">
+            <div className="grid gap-3 md:grid-cols-2">
               {orders.map((o) => (
-                <div key={o.id} className="border border-primary/20 rounded-xl p-3 bg-white/70 space-y-1 text-sm">
+                <div key={o.id} className="border border-primary/20 rounded-xl p-4 bg-white/70 space-y-2 text-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-semibold">Orden #{o.id.slice(0, 6)}</div>
                       <div className="text-xs text-slate-600">{formatMoney(o.total_cents, o.currency)}</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {o.status === 'pending' && (
-                        <button
-                          type="button"
-                          className="text-xs text-rose-700 hover:underline disabled:opacity-50"
-                          onClick={() => handleDelete(o.id)}
-                          disabled={deletingId === o.id || loading}
-                        >
-                          {deletingId === o.id ? 'Eliminando…' : 'Eliminar'}
-                        </button>
-                      )}
-                      <span className={`text-xs px-2 py-1 rounded-full ${o.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                        {o.status === 'paid' ? 'Pagada' : 'Pendiente'}
-                      </span>
-                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${o.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {o.status === 'paid' ? 'Pagada' : 'Pendiente'}
+                    </span>
                   </div>
                   {o.paid_at && <div className="text-xs text-slate-600">Pagada: {formatDate(o.paid_at)}</div>}
                   {o.provider && <div className="text-xs text-slate-600">Método: {o.provider}</div>}
@@ -389,9 +256,7 @@ export default function Compras() {
                   {o.items && o.items.length > 0 && (
                     <ul className="text-xs text-slate-600 list-disc list-inside space-y-0.5">
                       {o.items.map((it) => (
-                        <li key={it.id}>
-                          {it.quantity} x {it.product_name || 'Producto'} ({formatMoney(it.unit_price_cents, o.currency)})
-                        </li>
+                        <li key={it.id}>{it.quantity} x {formatMoney(it.unit_price_cents, o.currency)}</li>
                       ))}
                     </ul>
                   )}

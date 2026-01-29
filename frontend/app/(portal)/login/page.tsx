@@ -49,7 +49,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="card w-full max-w-md space-y-6">
+    <main className="card w-full max-w-md mx-auto space-y-6 sm:space-y-8">
       <header className="space-y-1 text-center">
         <p className="text-sm uppercase tracking-wide text-primary">Acceso clientes</p>
         <h1 className="text-2xl font-semibold">Inicia sesión en tu portal</h1>
@@ -62,7 +62,7 @@ export default function LoginPage() {
         <label className="block text-left">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Correo electrónico</span>
           <input
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 focus:border-primary focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base focus:border-primary focus:outline-none"
             type="email"
             autoComplete="email"
             required
@@ -75,7 +75,7 @@ export default function LoginPage() {
         <label className="block text-left">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Contraseña</span>
           <input
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 focus:border-primary focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base focus:border-primary focus:outline-none"
             type="password"
             autoComplete="current-password"
             required

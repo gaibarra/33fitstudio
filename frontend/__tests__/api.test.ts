@@ -1,6 +1,10 @@
 import { apiFetch } from '../lib/api';
 
-global.fetch = jest.fn(async () => ({ ok: true, json: async () => ({ ok: true }) })) as any;
+global.fetch = jest.fn(async () => ({
+  ok: true,
+  status: 200,
+  text: async () => JSON.stringify({ ok: true }),
+})) as any;
 
 describe('apiFetch', () => {
   it('calls backend with studio header when configured', async () => {

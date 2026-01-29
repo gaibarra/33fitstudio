@@ -116,6 +116,18 @@ const typeLabel: Record<Product['type'], string> = {
   membership: 'Membresía',
 };
 
+const HERO_IMAGES = [
+  '/IMG_6942.JPG.jpeg',
+  '/IMG_6948.JPG.jpeg',
+  '/IMG_6960.JPG.jpeg',
+  '/IMG_6978.JPG.jpeg',
+  '/IMG_7014.JPG.jpeg',
+  '/IMG_7015.JPG.jpeg',
+  '/IMG_7093.JPG.jpeg',
+  '/IMG_7101.JPG.jpeg',
+  '/IMG_7105.JPG.jpeg',
+];
+
 const EXTRA_INFO: Record<string, {
   level: string;
   intensity: string;
@@ -185,6 +197,7 @@ export default function Home() {
   const [needsProductLogin, setNeedsProductLogin] = useState(false);
   const [classError, setClassError] = useState('');
   const [productError, setProductError] = useState('');
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
 
   const hasToken = () => (typeof window !== 'undefined' ? sessionStorage.getItem('access') : null);
   const bookingHref = hasToken() ? '/horarios' : '/portal';
@@ -255,6 +268,14 @@ export default function Home() {
     }
   }, [loadClassTypes, loadProducts]);
 
+  useEffect(() => {
+    if (HERO_IMAGES.length <= 1) return undefined;
+    const interval = setInterval(() => {
+      setActiveHeroIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <main className="space-y-8 sm:space-y-10">
       <section className="card grid gap-6 items-center md:grid-cols-2">
@@ -271,15 +292,31 @@ export default function Home() {
             <a className="btn w-full sm:w-auto bg-accent text-slate-900 hover:bg-[#f7df5f] text-center" href="#paquetes">Paquetes</a>
           </div>
         </div>
-        <div className="flex items-center justify-center">
-          <Image
-            src="/logo_33fitstudio.png"
-            alt="Logo 33 F/T Studio"
-            width={360}
-            height={360}
-            priority
-            className="w-full max-w-[260px] h-auto"
-          />
+        <div className="flex flex-col items-center justify-center gap-3">
+          <div className="relative w-full max-w-[320px] aspect-square overflow-hidden rounded-2xl bg-primary/10">
+            <Image
+              key={HERO_IMAGES[activeHeroIndex]}
+              src={HERO_IMAGES[activeHeroIndex]}
+              alt="Galería 33 F/T Studio"
+              width={640}
+              height={640}
+              priority
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            {HERO_IMAGES.map((_, index) => (
+              <button
+                key={`hero-dot-${index}`}
+                type="button"
+                onClick={() => setActiveHeroIndex(index)}
+                className={`h-2.5 w-2.5 rounded-full transition ${
+                  index === activeHeroIndex ? 'bg-primary' : 'bg-primary/30'
+                }`}
+                aria-label={`Ver imagen ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </section>
 

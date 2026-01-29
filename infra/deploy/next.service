@@ -6,6 +6,7 @@ After=network.target
 Type=simple
 User=gaibarra
 WorkingDirectory=/home/gaibarra/33fitstudio/frontend
+EnvironmentFile=-/home/gaibarra/33fitstudio/frontend/.env.production
 Environment=NODE_ENV=production
 ExecStart=/home/gaibarra/.nvm/versions/node/v20.18.0/bin/npm run start -- --hostname 127.0.0.1 --port 3030
 Restart=always

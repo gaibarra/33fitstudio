@@ -235,7 +235,7 @@ export default function AgendaAdmin() {
 
   return (
     <main className="card space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-primary">Agenda</p>
           <h1 className="text-2xl font-semibold">Programar sesiones</h1>
@@ -246,12 +246,12 @@ export default function AgendaAdmin() {
 
       <div className="space-y-6">
         <div className="space-y-3">
-          <div className="rounded-2xl border border-primary/15 bg-white/80 p-4 space-y-2">
+          <div className="rounded-2xl border border-primary/15 bg-white/80 p-4 space-y-3">
             <p className="text-sm font-semibold">{editingId ? 'Editar sesión' : 'Crear nueva sesión'}</p>
             <label className="space-y-1 text-sm">
               <span className="font-semibold text-slate-600">Tipo de clase</span>
               <select
-                className="w-full rounded-xl border border-primary/30 px-3 py-2"
+                className="w-full rounded-xl border border-primary/30 px-3 py-2 text-base"
                 value={classTypeId}
                 onChange={(e) => setClassTypeId(e.target.value)}
               >
@@ -268,7 +268,7 @@ export default function AgendaAdmin() {
             <label className="space-y-1 text-sm">
               <span className="font-semibold text-slate-600">Fecha y hora</span>
               <input
-                className="w-full rounded-xl border border-primary/30 px-3 py-2"
+                className="w-full rounded-xl border border-primary/30 px-3 py-2 text-base"
                 type="datetime-local"
                 value={startsAt}
                 onChange={(e) => setStartsAt(e.target.value)}
@@ -277,7 +277,7 @@ export default function AgendaAdmin() {
             <label className="space-y-1 text-sm">
               <span className="font-semibold text-slate-600">Capacidad</span>
               <input
-                className="w-full rounded-xl border border-primary/30 px-3 py-2"
+                className="w-full rounded-xl border border-primary/30 px-3 py-2 text-base"
                 type="number"
                 min={1}
                 value={capacity}
@@ -286,7 +286,7 @@ export default function AgendaAdmin() {
             </label>
             <div className="flex flex-wrap gap-2 pt-2">
               <button
-                className="btn"
+                className="btn w-full sm:w-auto"
                 onClick={handleSubmit}
                 disabled={submitting || !classTypeId || !startsAt}
               >
@@ -295,7 +295,7 @@ export default function AgendaAdmin() {
               {editingId && (
                 <button
                   type="button"
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-slate-500"
+                  className="w-full sm:w-auto rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-slate-500"
                   onClick={resetForm}
                 >
                   Cancelar edición
@@ -338,7 +338,7 @@ export default function AgendaAdmin() {
             {sessions.length === 0 && <p className="text-slate-700">Sin sesiones programadas.</p>}
             {sessions.map((s) => (
               <div key={s.id} className="rounded-2xl border border-primary/20 bg-white/80 px-4 py-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <p className="text-base font-bold text-slate-900">{classTypesMap[String(s.class_type)] || 'Sin nombre'}</p>
                     <span className="text-slate-600">
@@ -355,7 +355,7 @@ export default function AgendaAdmin() {
                     {s.location && <span>Sede: {locationsMap[String(s.location)] || 'Sin sede'}</span>}
                     {s.notes && <span className="text-slate-600">Notas: {s.notes}</span>}
                   </div>
-                  <div className="flex gap-2 text-xs font-semibold">
+                  <div className="flex gap-3 text-xs font-semibold">
                     <button
                       type="button"
                       className="text-primary hover:underline"

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  background: #D1DB92;
+  background: #f8f3e6;
   color: #1f2d16;
   font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
 }
@@ -16,7 +16,7 @@ a { color: inherit; }
   }
 
   .card {
-    @apply bg-white/80 backdrop-blur rounded-xl p-6 shadow-sm;
+    @apply bg-white/80 backdrop-blur rounded-2xl p-4 sm:p-6 shadow-sm;
   }
 }
 

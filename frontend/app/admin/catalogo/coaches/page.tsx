@@ -127,12 +127,12 @@ export default function CoachesCatalogo() {
 
   return (
     <main className="card space-y-5">
-      <div className="flex items-center gap-3 text-sm text-slate-700">
+      <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
         <Link href="/admin/catalogo" className="text-primary hover:underline">← Catálogos</Link>
         <span className="text-slate-400">/</span>
         <span className="font-semibold">Coaches</span>
         <span className="text-xs text-slate-500 bg-slate-100 rounded-full px-2 py-1">{items.length} en total</span>
-        <span className="ml-auto text-xs text-slate-500">{loading ? 'Actualizando…' : 'Sincronizado'}</span>
+        <span className="sm:ml-auto text-xs text-slate-500">{loading ? 'Actualizando…' : 'Sincronizado'}</span>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -145,14 +145,14 @@ export default function CoachesCatalogo() {
           </div>
           <label className="text-xs text-slate-500">Nombre completo</label>
           <input
-            className="w-full rounded-xl border border-primary/40 px-3 py-2"
+            className="w-full rounded-xl border border-primary/40 px-3 py-2 text-base"
             placeholder="Nombre completo"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <label className="text-xs text-slate-500">Bio corta / certificaciones</label>
           <textarea
-            className="w-full rounded-xl border border-primary/40 px-3 py-2"
+            className="w-full rounded-xl border border-primary/40 px-3 py-2 text-base"
             placeholder="Bio corta / certificaciones"
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -167,7 +167,7 @@ export default function CoachesCatalogo() {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <input
-                className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
                 placeholder="Buscar por nombre o bio"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

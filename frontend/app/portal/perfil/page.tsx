@@ -101,7 +101,7 @@ export default function PerfilPage() {
             type="email"
             value={email}
             readOnly
-            className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-slate-600"
+            className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-base text-slate-600"
           />
         </label>
         <label className="block space-y-1">
@@ -110,7 +110,7 @@ export default function PerfilPage() {
             type="text"
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
             placeholder="Tu nombre"
             required
             disabled={loading || needsLogin}
@@ -122,15 +122,15 @@ export default function PerfilPage() {
             type="tel"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
             placeholder="10 dígitos"
             disabled={loading || needsLogin}
           />
         </label>
-        <div className="flex justify-end">
+        <div className="flex flex-col sm:flex-row sm:justify-end">
           <button
             type="submit"
-            className="btn"
+            className="btn w-full sm:w-auto"
             disabled={saving || loading || needsLogin}
           >
             {saving ? 'Guardando…' : 'Guardar cambios'}

@@ -12,6 +12,7 @@ NGINX_SITE="/etc/nginx/sites-available/33fitstudio.conf"
 NGINX_HTTP_SRC="$PROJECT_ROOT/infra/deploy/nginx.http.conf"
 NGINX_SSL_SRC="$PROJECT_ROOT/infra/deploy/nginx.conf"
 SYSTEMD_UNIT="/etc/systemd/system/gunicorn-33fitstudio.service"
+NEXT_SYSTEMD_UNIT="/etc/systemd/system/next-33fitstudio.service"
 SUPERVISOR_CONF="/etc/supervisor/conf.d/33fitstudio.conf"
 ACME_ROOT="/var/www/letsencrypt"
 DOMAIN="33fitstudio.online"
@@ -39,6 +40,15 @@ cd "$BACKEND_DIR"
 "$PROJECT_ROOT/.venv/bin/python" manage.py collectstatic --noinput
 "$PROJECT_ROOT/.venv/bin/python" manage.py bootstrap_roles_admin
 
+# Frontend setup
+echo "[+] Instalando dependencias frontend"
+cd "$FRONTEND_DIR"
+if [[ ! -f "$FRONTEND_DIR/.env.production" ]]; then
+  echo "[i] Falta $FRONTEND_DIR/.env.production. Copia y ajusta infra/deploy/frontend.env.production.example." >&2
+fi
+npm install
+npm run build
+
 # Nginx
 echo "[+] Configurando nginx"
 mkdir -p "$ACME_ROOT"
@@ -61,6 +71,13 @@ systemctl daemon-reload
 systemctl enable --now gunicorn-33fitstudio
 systemctl restart gunicorn-33fitstudio
 
+# Next.js (systemd)
+echo "[+] Configurando Next.js systemd"
+cp "$PROJECT_ROOT/infra/deploy/next.service" "$NEXT_SYSTEMD_UNIT"
+systemctl daemon-reload
+systemctl enable --now next-33fitstudio
+systemctl restart next-33fitstudio
+
 # Celery (supervisor)
 echo "[+] Configurando supervisor para celery"
 mkdir -p /var/log/celery
@@ -81,5 +98,13 @@ if ! [[ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]]; then
 else
   echo "[i] Certificado ya existe; puede renovarse con: certbot renew --dry-run"
 fi
+
+echo "[+] Verificando servicios"
+systemctl status --no-pager -l gunicorn-33fitstudio
+systemctl status --no-pager -l next-33fitstudio
+echo "[+] Logs recientes (gunicorn)"
+journalctl -u gunicorn-33fitstudio -n 50 --no-pager
+echo "[+] Logs recientes (next)"
+journalctl -u next-33fitstudio -n 50 --no-pager
 
 echo "[✓] Deploy completado. Revisa systemctl status gunicorn-33fitstudio y supervisorctl status."

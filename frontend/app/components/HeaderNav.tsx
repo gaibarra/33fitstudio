@@ -92,15 +92,19 @@ export default function HeaderNav() {
         <div className="text-lg font-semibold group-hover:text-primary transition-colors">33 F/T Studio</div>
       </Link>
       {showNav ? (
-        <div className="flex flex-col gap-2 sm:items-end sm:flex-row sm:gap-4 sm:justify-end w-full sm:w-auto">
-          <nav className="flex gap-3 overflow-x-auto no-scrollbar text-sm font-semibold -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="flex flex-col gap-3 sm:items-end sm:flex-row sm:gap-4 sm:justify-end w-full sm:w-auto">
+          <nav className="flex gap-2 overflow-x-auto no-scrollbar text-sm font-semibold -mx-3 px-3 pb-1 sm:mx-0 sm:px-0 sm:pb-0">
             {visibleLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="hover:underline whitespace-nowrap">
+              <Link
+                key={link.href}
+                href={link.href}
+                className="whitespace-nowrap px-2 py-2 rounded-lg hover:bg-primary/10"
+              >
                 {link.label}
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-2 text-sm text-slate-700">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
             {loading && <span>Cargando…</span>}
             {!loading && user && (
               <>
@@ -124,10 +128,10 @@ export default function HeaderNav() {
           </div>
         </div>
       ) : (
-        <div className="flex w-full sm:w-auto justify-end">
+        <div className="flex w-full sm:w-auto justify-start sm:justify-end">
           <Link
             href="/login"
-            className="rounded-full border border-primary/40 bg-white/80 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
+            className="w-full sm:w-auto text-center rounded-full border border-primary/40 bg-white/80 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
           >
             Login
           </Link>

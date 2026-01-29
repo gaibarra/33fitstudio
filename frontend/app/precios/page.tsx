@@ -58,17 +58,17 @@ export default function Precios() {
   };
 
   return (
-    <main className="space-y-4 card">
-      <div className="flex items-center justify-between gap-3">
+    <main className="space-y-5 sm:space-y-6 card">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Precios</h1>
           <p className="text-sm text-slate-700">Productos activos del estudio.</p>
         </div>
       </div>
       {items.length === 0 && !loading && <p className="text-sm text-slate-600">No hay productos registrados.</p>}
-      <div className="grid md:grid-cols-2 gap-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {items.map((p) => (
-          <div key={p.id} className="border border-primary/20 rounded-xl p-3 space-y-1">
+          <div key={p.id} className="border border-primary/20 rounded-xl p-4 space-y-2">
             <div className="text-lg font-semibold">{p.name}</div>
             <div className="text-xs text-slate-600">{typeLabel[p.type]} · {p.currency} ${(p.price_cents || 0) / 100}</div>
             <div className="text-sm text-slate-700">{p.description || 'Sin descripción'}</div>

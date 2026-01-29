@@ -10,6 +10,7 @@ import { apiFetch } from '../../../lib/api';
 export default function RegistroPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [acceptPolicies, setAcceptPolicies] = useState(false);
@@ -44,6 +45,7 @@ export default function RegistroPage() {
         body: JSON.stringify({
           email,
           full_name: fullName,
+          phone,
           password,
           password_confirmation: passwordConfirmation,
         }),
@@ -66,7 +68,7 @@ export default function RegistroPage() {
   };
 
   return (
-    <main className="card w-full max-w-md space-y-6">
+    <main className="card w-full max-w-md mx-auto space-y-6 sm:space-y-8">
       <header className="space-y-1 text-center">
         <p className="text-sm uppercase tracking-wide text-primary">Portal clientes</p>
         <h1 className="text-2xl font-semibold">Crea tu cuenta</h1>
@@ -79,7 +81,7 @@ export default function RegistroPage() {
         <label className="block text-left">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre completo</span>
           <input
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 focus:border-primary focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base focus:border-primary focus:outline-none"
             type="text"
             autoComplete="name"
             value={fullName}
@@ -91,7 +93,7 @@ export default function RegistroPage() {
         <label className="block text-left">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Correo electrónico</span>
           <input
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 focus:border-primary focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base focus:border-primary focus:outline-none"
             type="email"
             autoComplete="email"
             required
@@ -102,9 +104,22 @@ export default function RegistroPage() {
         </label>
 
         <label className="block text-left">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Teléfono móvil</span>
+          <input
+            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base focus:border-primary focus:outline-none"
+            type="tel"
+            autoComplete="tel"
+            required
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            placeholder="10 dígitos"
+          />
+        </label>
+
+        <label className="block text-left">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Contraseña</span>
           <input
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 focus:border-primary focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base focus:border-primary focus:outline-none"
             type="password"
             autoComplete="new-password"
             required
@@ -117,7 +132,7 @@ export default function RegistroPage() {
         <label className="block text-left">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Confirmar contraseña</span>
           <input
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 focus:border-primary focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base focus:border-primary focus:outline-none"
             type="password"
             autoComplete="new-password"
             required
