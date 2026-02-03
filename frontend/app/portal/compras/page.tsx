@@ -51,8 +51,10 @@ export default function Compras() {
   const [quantity, setQuantity] = useState(1);
   const [provider, setProvider] = useState('manual');
   const [providerRef, setProviderRef] = useState('');
+  const [userBookings, setUserBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [viewMode, setViewMode] = useState<'movements' | 'orders'>('movements');
 
   const load = useCallback(async () => {
     const token = typeof window !== 'undefined' ? sessionStorage.getItem('access') : null;
@@ -66,10 +68,11 @@ export default function Compras() {
       const prods = await apiFetch('/api/catalog/products/');
       const prodList = Array.isArray(prods) ? prods : prods?.results || [];
 
-      const [ordsRes, balRes, memsRes] = await Promise.allSettled([
+      const [ordsRes, balRes, memsRes, bksRes] = await Promise.allSettled([
         apiFetch('/api/commerce/orders/'),
         apiFetch('/api/commerce/credits/balance/'),
         apiFetch('/api/commerce/memberships/'),
+        apiFetch('/api/scheduling/bookings/'),
       ]);
 
       const ords = ordsRes.status === 'fulfilled' ? ordsRes.value : [];
@@ -82,6 +85,7 @@ export default function Compras() {
       setOrders(ordList);
       setBalance(bal || null);
       setMemberships(memList);
+      setUserBookings(bksRes.status === 'fulfilled' ? (Array.isArray(bksRes.value) ? bksRes.value : bksRes.value?.results || []) : []);
       if (!selectedProduct) {
         const pre = params.get('product');
         if (pre && prodList.some((p: Product) => p.id === pre)) setSelectedProduct(pre);
@@ -152,120 +156,252 @@ export default function Compras() {
 
   const entitlementSummary = useMemo(() => {
     const parts: string[] = [];
-    if (balance?.credits_available) parts.push(`${balance.credits_available} créditos disponibles`);
-    if (balance?.next_credit_expiration) parts.push(`Expiran: ${new Date(balance.next_credit_expiration).toLocaleDateString('es-MX')}`);
-    const activeMembership = memberships.find((m) => m.status === 'active');
-    if (activeMembership) {
-      parts.push('Membresía activa');
-      if (activeMembership.ends_at) parts.push(`Vence: ${new Date(activeMembership.ends_at).toLocaleDateString('es-MX')}`);
-    }
-    if (parts.length === 0) return 'Sin productos activos aún.';
+    if (balance?.credits_available) parts.push(`${balance.credits_available} créditos`);
     return parts.join(' · ');
-  }, [balance, memberships]);
+  }, [balance]);
+
+  const movements = useMemo(() => {
+    const list: any[] = [];
+
+    // Add paid orders as credit increments
+    orders.filter(o => o.status === 'paid').forEach(o => {
+      list.push({
+        type: 'purchase',
+        date: o.paid_at || o.created_at,
+        title: `Compra de ${o.items?.map(it => it.quantity).reduce((a, b) => a + b, 0)} producto(s)`,
+        detail: o.id.slice(0, 6),
+        amount: formatMoney(o.total_cents, o.currency),
+        icon: '💰',
+        isPositive: true
+      });
+    });
+
+    // Add bookings as usage
+    userBookings.filter(b => b.status !== 'cancelled').forEach(b => {
+      list.push({
+        type: 'usage',
+        date: b.booked_at,
+        title: b.session_class_name || 'Clase entrenada',
+        detail: `${new Date(b.session_starts_at).toLocaleDateString('es-MX')}`,
+        amount: b.membership ? 'Membresía' : '-1 crédito',
+        icon: '💪',
+        isPositive: false
+      });
+    });
+
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [orders, userBookings]);
 
   if (!authChecked && loading) return null;
 
   return (
-    <main className="card space-y-5">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Comprar productos</h1>
-        <p className="text-sm text-slate-700">Activa paquetes, clases sueltas o membresías y revisa tu estado de cuenta.</p>
+    <main className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Estado de Cuenta</h1>
+        <p className="text-slate-500 font-medium">Administra tus créditos, revisa tus consumos y activa nuevos paquetes.</p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1 space-y-3 p-4 rounded-xl border border-primary/20 bg-white/70">
-          <p className="font-semibold">Nueva compra</p>
-          <label className="space-y-1 text-sm text-slate-700">
-            <span className="text-xs uppercase text-slate-500">Producto</span>
-            <select
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-              value={selectedProduct}
-              onChange={(e) => setSelectedProduct(e.target.value)}
-            >
-              <option value="">Selecciona</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} · {typeLabel[p.type]} · {formatMoney(p.price_cents, p.currency)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="space-y-1 text-sm text-slate-700">
-            <span className="text-xs uppercase text-slate-500">Cantidad</span>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
-            />
-          </label>
-          <label className="space-y-1 text-sm text-slate-700">
-            <span className="text-xs uppercase text-slate-500">Forma de pago</span>
-            <select
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-            >
-              <option value="manual">Manual / mostrador</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="efectivo">Efectivo</option>
-              <option value="otro">Otro</option>
-            </select>
-          </label>
-          <label className="space-y-1 text-sm text-slate-700">
-            <span className="text-xs uppercase text-slate-500">Referencia (opcional)</span>
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-              placeholder="Folio o nota"
-              value={providerRef}
-              onChange={(e) => setProviderRef(e.target.value)}
-            />
-          </label>
-          <button className="btn w-full" onClick={handlePurchase} disabled={loading}>
-            {loading ? 'Procesando…' : 'Comprar y activar'}
-          </button>
-        </div>
-
-        <div className="lg:col-span-2 space-y-4">
-          <div className="p-4 rounded-xl border border-primary/20 bg-white/70 space-y-2">
-            <div className="flex items-center gap-2">
-              <p className="font-semibold">Estado de cuenta</p>
-              {loading && <span className="text-xs text-slate-500">Actualizando…</span>}
+      {/* Balance Section */}
+      {!loading && balance && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/20 flex flex-col justify-between min-h-[140px]">
+            <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Créditos Disponibles</span>
+            <div>
+              <span className="text-4xl font-black">{balance.credits_available}</span>
+              <span className="ml-2 text-sm font-medium opacity-90 uppercase tracking-tighter">Clases</span>
             </div>
-            <p className="text-sm text-slate-700">{entitlementSummary}</p>
+            {balance.next_credit_expiration && (
+              <p className="text-[10px] font-medium opacity-70 mt-2 italic">Próximo vencimiento: {new Date(balance.next_credit_expiration).toLocaleDateString()}</p>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <p className="font-semibold">Tus compras</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {orders.map((o) => (
-                <div key={o.id} className="border border-primary/20 rounded-xl p-4 bg-white/70 space-y-2 text-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-semibold">Orden #{o.id.slice(0, 6)}</div>
-                      <div className="text-xs text-slate-600">{formatMoney(o.total_cents, o.currency)}</div>
+          {memberships.some(m => m.status === 'active') ? (
+            memberships.filter(m => m.status === 'active').map(m => (
+              <div key={m.id} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col justify-between min-h-[140px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Membresía Activa</span>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                </div>
+                <p className="text-lg font-bold text-slate-800">Acceso Ilimitado</p>
+                <p className="text-xs text-slate-500 font-medium">Vence el {m.ends_at ? new Date(m.ends_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }) : 'S/F'}</p>
+              </div>
+            ))
+          ) : (
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-center items-center text-center space-y-2">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sin Membresía</span>
+              <p className="text-xs text-slate-500 max-w-[180px]">Obtén beneficios exclusivos con un plan mensual.</p>
+            </div>
+          )}
+
+          <div className="hidden lg:flex p-6 rounded-2xl bg-accent/10 border border-accent/20 flex-col justify-center items-center text-center space-y-3">
+            <span className="text-2xl">⚡</span>
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">¿Listo para entrenar?</p>
+            <button className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors" onClick={() => router.push('/horarios')}>Reservar Clase</button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid lg:grid-cols-12 gap-6">
+        {/* Left Column: Purchase Form */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="card !p-6 space-y-4 shadow-sm border-slate-100">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">＋</span>
+              Nueva Compra
+            </h2>
+            <div className="space-y-4 pt-2">
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Seleccionar Plan</span>
+                <select
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                  value={selectedProduct}
+                  onChange={(e) => setSelectedProduct(e.target.value)}
+                >
+                  <option value="">Elegir producto...</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} · {formatMoney(p.price_cents, p.currency)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block space-y-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Cantidad</span>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Pago</span>
+                  <select
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                    value={provider}
+                    onChange={(e) => setProvider(e.target.value)}
+                  >
+                    <option value="manual">Mostrador</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="efectivo">Efectivo</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Referencia / Folio</span>
+                <input
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                  placeholder="Número de pago o nota"
+                  value={providerRef}
+                  onChange={(e) => setProviderRef(e.target.value)}
+                />
+              </label>
+
+              <button
+                className="btn w-full !py-3 bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-200 font-bold transition-all disabled:opacity-50"
+                onClick={handlePurchase}
+                disabled={loading}
+              >
+                {loading ? 'Procesando…' : 'Solicitar Activación'}
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 space-y-3">
+            <p className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+              <span className="text-lg">💡</span> ¿Cómo comprar?
+            </p>
+            <p className="text-xs text-emerald-800 leading-relaxed opacity-80">
+              Elige tu paquete, realiza el pago y envía tu referencia. Un administrador validará tu pago y activará tus créditos en unos minutos.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Column: Statement / Movements */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+            <button
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'movements' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              onClick={() => setViewMode('movements')}
+            >
+              Movimientos
+            </button>
+            <button
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'orders' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              onClick={() => setViewMode('orders')}
+            >
+              Historial de Compras
+            </button>
+          </div>
+
+          {viewMode === 'movements' ? (
+            <div className="space-y-4">
+              {movements.length > 0 ? (
+                <div className="relative before:absolute before:left-[19px] before:top-4 before:bottom-4 before:w-[2px] before:bg-slate-100">
+                  {movements.map((mov, idx) => (
+                    <div key={idx} className="relative flex gap-5 pb-8 last:pb-0 group">
+                      <div className={`mt-1 w-10 h-10 rounded-xl flex items-center justify-center text-lg z-10 shadow-sm border transition-transform group-hover:scale-110 ${mov.isPositive ? 'bg-emerald-50 border-emerald-100' : 'bg-primary/5 border-primary/10'}`}>
+                        {mov.icon}
+                      </div>
+                      <div className="flex-1 pt-1.5 flex justify-between items-start gap-4">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{mov.title}</p>
+                          <p className="text-xs text-slate-400 font-medium">{formatDate(mov.date)} · ID: {mov.detail}</p>
+                        </div>
+                        <div className={`text-sm font-black whitespace-nowrap px-3 py-1 rounded-lg ${mov.isPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                          {mov.isPositive ? '+' : ''} {mov.amount}
+                        </div>
+                      </div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${o.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-20 text-center space-y-4 bg-white rounded-2xl border border-dashed border-slate-200">
+                  <div className="text-4xl">📄</div>
+                  <p className="text-slate-400 font-medium">No hay movimientos registrados en tu cuenta.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {orders.map((o) => (
+                <div key={o.id} className="card !p-5 space-y-4 border-slate-100 shadow-sm group hover:border-primary/30 transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Orden #{o.id.slice(0, 6)}</div>
+                      <div className="text-lg font-bold text-slate-900">{formatMoney(o.total_cents, o.currency)}</div>
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg ${o.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                       {o.status === 'paid' ? 'Pagada' : 'Pendiente'}
                     </span>
                   </div>
-                  {o.paid_at && <div className="text-xs text-slate-600">Pagada: {formatDate(o.paid_at)}</div>}
-                  {o.provider && <div className="text-xs text-slate-600">Método: {o.provider}</div>}
-                  {o.provider_ref && <div className="text-xs text-slate-600">Ref: {o.provider_ref}</div>}
-                  {o.items && o.items.length > 0 && (
-                    <ul className="text-xs text-slate-600 list-disc list-inside space-y-0.5">
-                      {o.items.map((it) => (
-                        <li key={it.id}>{it.quantity} x {formatMoney(it.unit_price_cents, o.currency)}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="text-xs text-slate-500">Creada: {formatDate(o.created_at)}</div>
+
+                  <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-50">
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Fecha</p>
+                      <p className="text-xs font-semibold text-slate-700">{new Date(o.created_at || '').toLocaleDateString()}</p>
+                    </div>
+                    {o.provider && (
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Método</p>
+                        <p className="text-xs font-semibold text-slate-700 capitalize">{o.provider}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-400 font-medium">Ref: {o.provider_ref || 'N/A'}</span>
+                    {o.paid_at && <span className="text-emerald-600 font-bold">✓ Activo</span>}
+                  </div>
                 </div>
               ))}
-              {orders.length === 0 && <p className="text-xs text-slate-600">Aún no tienes compras registradas.</p>}
+              {orders.length === 0 && <p className="text-center py-20 text-slate-400 italic">No has realizado compras aún.</p>}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </main>

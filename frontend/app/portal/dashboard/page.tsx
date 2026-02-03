@@ -242,8 +242,8 @@ export default function ClienteDashboard() {
                     <div className="flex items-center gap-3">
                         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/30 text-xl">🛒</span>
                         <div>
-                            <p className="text-lg font-bold text-slate-900 group-hover:text-primary">Comprar</p>
-                            <p className="text-sm text-slate-600">Paquetes y membresías</p>
+                            <p className="text-lg font-bold text-slate-900 group-hover:text-primary">Estado de Cuenta</p>
+                            <p className="text-sm text-slate-600">Compras y movimientos</p>
                         </div>
                     </div>
                 </Link>
@@ -338,7 +338,7 @@ export default function ClienteDashboard() {
                         href="/portal/compras"
                         className="rounded-full border border-primary px-6 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5 transition-colors text-center"
                     >
-                        🛒 Comprar paquete
+                        🛒 Estado de cuenta
                     </Link>
                     <Link
                         href="/clases"

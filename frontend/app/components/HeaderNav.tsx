@@ -10,13 +10,14 @@ const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/#clases', label: 'Clases' },
   { href: '/horarios', label: 'Tus Reservas' },
-  { href: '/precios', label: 'Comprar' },
+  { href: '/portal/compras', label: 'Estado de Cuenta' },
   { href: '/admin', label: 'Admin', adminOnly: true },
 ];
 
 export default function HeaderNav() {
   const [user, setUser] = useState<any>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [balance, setBalance] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const didLoad = useRef(false);
   const pathname = usePathname();
@@ -29,10 +30,13 @@ export default function HeaderNav() {
       return;
     }
     try {
-      setLoading(true);
-      const me = await apiFetch('/api/auth/me/');
+      const [me, bal] = await Promise.all([
+        apiFetch('/api/auth/me/'),
+        apiFetch('/api/commerce/credits/balance/').catch(() => null)
+      ]);
       setUser(me);
       setRoles(Array.isArray(me?.roles) ? me.roles : []);
+      setBalance(bal);
     } catch (err) {
       // if token invalid, clear session
       sessionStorage.removeItem('access');
@@ -81,8 +85,9 @@ export default function HeaderNav() {
   const showNav = Boolean(user);
   const displayName = (() => {
     if (!user) return '';
-    const composed = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
-    return composed || user.name || user.username || user.email || 'Cliente';
+    if (user.first_name) return user.first_name;
+    if (user.full_name) return user.full_name.split(' ')[0];
+    return user.username || user.email?.split('@')[0] || 'Cliente';
   })();
   const highlightedRoles = roles.filter((role) => role !== 'customer');
 
@@ -129,6 +134,12 @@ export default function HeaderNav() {
                   <span className="text-xs bg-slate-200 text-slate-800 px-2 py-1 rounded-full">
                     {highlightedRoles.join(', ')}
                   </span>
+                )}
+                {balance && typeof balance.credits_available === 'number' && (
+                  <Link href="/portal/compras" className="flex items-center gap-1 bg-accent/20 text-slate-900 border border-accent/40 px-3 py-1 rounded-full text-xs font-bold hover:bg-accent/30 transition-all">
+                    <span>🎟️</span>
+                    <span>{balance.credits_available} {balance.credits_available === 1 ? 'crédito' : 'créditos'}</span>
+                  </Link>
                 )}
                 <button type="button" className="text-primary font-semibold hover:underline" onClick={handleLogout}>
                   Salir
