@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
@@ -88,7 +89,16 @@ export default function HeaderNav() {
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <Link href="/" className="flex items-center gap-3 group" aria-label="Ir al inicio">
-        <div className="h-10 w-10 rounded-full bg-primary text-white font-bold grid place-items-center transition-transform group-hover:scale-105">33</div>
+        <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-primary/10 grid place-items-center overflow-hidden transition-transform group-hover:scale-105">
+          <Image
+            src="/logo_33fitstudio.png"
+            alt="Logo 33 F/T Studio"
+            width={96}
+            height={96}
+            className="h-full w-full object-cover"
+            priority
+          />
+        </div>
         <div className="text-lg font-semibold group-hover:text-primary transition-colors">33 F/T Studio</div>
       </Link>
       {showNav ? (

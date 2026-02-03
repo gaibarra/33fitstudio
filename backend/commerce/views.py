@@ -12,6 +12,8 @@ from users.permissions import IsAdmin, IsStaff
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ['status']
+    ordering_fields = ['created_at', 'status', 'total_cents']
 
     def get_queryset(self):
         studio = self.request.studio
@@ -45,6 +47,42 @@ class OrderViewSet(viewsets.ModelViewSet):
         provider = request.data.get('provider') or 'manual'
         provider_ref = request.data.get('provider_ref')
         mark_order_paid(order, provider=provider, provider_ref=provider_ref)
+        return Response(OrderSerializer(order).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def set_status(self, request, pk=None):
+        order = self.get_queryset().filter(pk=pk).first()
+        if not order:
+            return Response({'detail': 'Orden no encontrada'}, status=404)
+        is_staff_admin = request.user.has_role('staff') or request.user.has_role('admin')
+        if not is_staff_admin:
+            return Response({'detail': 'Solo staff/admin pueden actualizar estados'}, status=403)
+
+        new_status = request.data.get('status')
+        valid_statuses = {choice[0] for choice in Order.OrderStatus.choices}
+        if not new_status or new_status not in valid_statuses:
+            return Response({'detail': 'Estado inválido'}, status=400)
+
+        if new_status == Order.OrderStatus.PAID:
+            provider = request.data.get('provider') or 'manual'
+            provider_ref = request.data.get('provider_ref')
+            mark_order_paid(order, provider=provider, provider_ref=provider_ref)
+            return Response(OrderSerializer(order).data)
+
+        update_fields = []
+        if order.status != new_status:
+            order.status = new_status
+            update_fields.append('status')
+
+        if 'provider' in request.data:
+            order.provider = request.data.get('provider') or None
+            update_fields.append('provider')
+        if 'provider_ref' in request.data:
+            order.provider_ref = request.data.get('provider_ref') or None
+            update_fields.append('provider_ref')
+
+        if update_fields:
+            order.save(update_fields=update_fields)
         return Response(OrderSerializer(order).data)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])

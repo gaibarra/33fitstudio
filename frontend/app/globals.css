@@ -10,6 +10,26 @@
 
 a { color: inherit; }
 
+@layer base {
+  input,
+  textarea,
+  select {
+    color: #000 !important;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-slate-400;
+  }
+
+  input:-webkit-autofill,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: #000 !important;
+    color: #000 !important;
+  }
+}
+
 @layer components {
   .btn {
     @apply px-4 py-3 rounded-xl bg-primary text-white font-semibold shadow-sm hover:bg-primaryDark transition;

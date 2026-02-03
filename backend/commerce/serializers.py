@@ -9,11 +9,13 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_name = serializers.CharField(source='user.full_name', read_only=True, allow_null=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'studio', 'user', 'status', 'total_cents', 'currency', 'provider', 'provider_ref', 'paid_at', 'items', 'created_at']
-        read_only_fields = ['id', 'status', 'total_cents', 'paid_at', 'created_at', 'studio', 'user']
+        fields = ['id', 'studio', 'user', 'user_email', 'user_name', 'status', 'total_cents', 'currency', 'provider', 'provider_ref', 'paid_at', 'items', 'created_at']
+        read_only_fields = ['id', 'status', 'total_cents', 'paid_at', 'created_at', 'studio', 'user', 'user_email', 'user_name']
 
 class CreateOrderSerializer(serializers.Serializer):
     items = serializers.ListField(child=serializers.DictField(), allow_empty=False)
