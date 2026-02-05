@@ -190,6 +190,43 @@ export default function Horarios() {
     }
   };
 
+  const cancelSession = async (sessionId: string) => {
+    const booking = userBookings.find(b => String(b.session) === String(sessionId) && b.status !== 'cancelled');
+    if (!booking) return;
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: '¿Cancelar reserva?',
+      text: 'Se liberará tu lugar y se devolverá tu crédito (si aplica).',
+      showCancelButton: true,
+      confirmButtonColor: '#c0392b',
+      cancelButtonColor: '#6b8a1f',
+      confirmButtonText: 'Sí, cancelar',
+      cancelButtonText: 'No, mantener',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await apiFetch(`/api/scheduling/bookings/${booking.id}/cancel/`, { method: 'POST' });
+      await Swal.fire({
+        icon: 'success',
+        title: 'Reserva cancelada',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      load();
+    } catch (err: any) {
+      const parsed = parseErrorMessage(err, 'No se pudo cancelar');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: parsed,
+        confirmButtonColor: '#c0392b',
+      });
+    }
+  };
+
   const isBooked = (sessionId: string) => {
     return userBookings.some(b => String(b.session) === String(sessionId) && b.status !== 'cancelled');
   };
@@ -269,8 +306,8 @@ export default function Horarios() {
             <div
               key={s.id}
               className={`group overflow-hidden relative p-5 rounded-2xl border transition-all duration-300 ${booked
-                  ? 'bg-emerald-50/50 border-emerald-200 shadow-sm'
-                  : 'bg-white border-slate-100 hover:border-primary/30 hover:shadow-md'
+                ? 'bg-emerald-50/50 border-emerald-200 shadow-sm'
+                : 'bg-white border-slate-100 hover:border-primary/30 hover:shadow-md'
                 }`}
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between relative z-10">
@@ -311,13 +348,19 @@ export default function Horarios() {
 
                   <button
                     className={`btn px-6 py-2.5 rounded-xl font-bold transition-all ${booked
-                        ? 'bg-emerald-100 text-emerald-700 border-none cursor-default opacity-80'
-                        : 'bg-primary text-white hover:bg-primary-dark hover:-translate-y-0.5 shadow-sm active:translate-y-0'
+                      ? 'bg-rose-100 text-rose-700 hover:bg-rose-200 hover:shadow-sm'
+                      : 'bg-primary text-white hover:bg-primary-dark hover:-translate-y-0.5 shadow-sm active:translate-y-0'
                       }`}
-                    onClick={() => !booked && bookSession(String(s.id))}
-                    disabled={loading || (s.status !== 'scheduled' && !booked) || isAdminUser}
+                    onClick={() => {
+                      if (booked) {
+                        cancelSession(String(s.id));
+                      } else {
+                        bookSession(String(s.id));
+                      }
+                    }}
+                    disabled={loading || (s.status !== 'scheduled' && !booked) || (isAdminUser && !booked)}
                   >
-                    {isAdminUser ? 'Solo clientes' : booked ? 'Confirmado' : s.status === 'scheduled' ? 'Reservar Lugar' : 'Agotado'}
+                    {isAdminUser ? 'Solo clientes' : booked ? 'Cancelar' : s.status === 'scheduled' ? 'Reservar Lugar' : 'Agotado'}
                   </button>
                 </div>
               </div>
