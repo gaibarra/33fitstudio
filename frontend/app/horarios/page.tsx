@@ -1,6 +1,6 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiFetch } from '../../lib/api';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiFetch, fetchSessions } from '../../lib/api';
 import Swal from 'sweetalert2';
 
 const parseErrorMessage = (err: any, fallback: string) => {
@@ -30,8 +30,10 @@ export default function Horarios() {
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [balance, setBalance] = useState<any>(null);
   const [userBookings, setUserBookings] = useState<any[]>([]);
+  const bookingInProgress = useRef(false);
 
   const load = useCallback(async () => {
+    if (bookingInProgress.current) return; // skip reload while booking
     const token = typeof window !== 'undefined' ? sessionStorage.getItem('access') : null;
     if (!token) {
       setNeedsLogin(true);
@@ -42,11 +44,11 @@ export default function Horarios() {
       setLoading(true);
       const [me, data, ct, ins, loc, bal, myBookings] = await Promise.all([
         apiFetch('/api/auth/me/'),
-        apiFetch('/api/scheduling/sessions/'),
+        fetchSessions(true),
         apiFetch('/api/catalog/class-types/'),
         apiFetch('/api/catalog/instructors/'),
         apiFetch('/api/studios/location/'),
-        apiFetch('/api/commerce/user-credits/balance/').catch(() => null),
+        apiFetch('/api/commerce/credits/balance/').catch(() => null),
         apiFetch('/api/scheduling/bookings/').catch(() => []),
       ]);
 
@@ -165,8 +167,10 @@ export default function Horarios() {
       });
       return;
     }
+    bookingInProgress.current = true;
     try {
       await apiFetch('/api/scheduling/bookings/', { method: 'POST', body: JSON.stringify({ session: sessionId }) });
+      bookingInProgress.current = false;
       await load();
       await Swal.fire({
         icon: 'success',
@@ -187,6 +191,8 @@ export default function Horarios() {
         text: detail,
         confirmButtonColor: '#c0392b',
       });
+    } finally {
+      bookingInProgress.current = false;
     }
   };
 

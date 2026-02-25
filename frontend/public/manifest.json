@@ -1,0 +1,22 @@
+{
+  "name": "33 F/T Studio",
+  "short_name": "33 F/T",
+  "description": "Reservas, membresías y control de acceso para 33 F/T Studio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f110b",
+  "theme_color": "#97A546",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

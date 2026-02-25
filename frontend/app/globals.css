@@ -32,11 +32,11 @@ a { color: inherit; }
 
 @layer components {
   .btn {
-    @apply px-4 py-3 rounded-xl bg-primary text-white font-semibold shadow-sm hover:bg-primaryDark transition;
+    @apply px-4 py-3 rounded-xl bg-primary text-white font-semibold shadow-sm hover:shadow-md hover:bg-primaryDark hover:-translate-y-[1px] active:translate-y-[1px] active:scale-[0.98] transition-all duration-200 ease-in-out;
   }
 
   .card {
-    @apply bg-white/80 backdrop-blur rounded-2xl p-4 sm:p-6 shadow-sm;
+    @apply bg-glassBg backdrop-blur-md border border-glassBorder rounded-2xl p-4 sm:p-6 shadow-glass;
   }
 }
 

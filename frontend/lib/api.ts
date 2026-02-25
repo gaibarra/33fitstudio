@@ -21,7 +21,7 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
+  const timeout = setTimeout(() => controller.abort('Tiempo de espera agotado'), 30_000);
 
   try {
     const base = getApiBase();
@@ -47,11 +47,19 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
       // If not JSON, return plain text
       return raw;
     }
+  } catch (err: any) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('La solicitud tardó demasiado. Verifica tu conexión e intenta de nuevo.');
+    }
+    throw err;
   } finally {
     clearTimeout(timeout);
   }
 }
 
 export const fetchLinkButtons = () => apiFetch(`/api/studios/linkbutton/public?studio_id=${STUDIO_ID}`);
-export const fetchSessions = () => apiFetch('/api/scheduling/sessions/');
+export const fetchSessions = (fromNow = true) => {
+  const query = fromNow ? `?start_gte=${new Date().toISOString()}` : '';
+  return apiFetch(`/api/scheduling/sessions/${query}`);
+};
 export { getApiBase };

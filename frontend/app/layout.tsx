@@ -1,15 +1,25 @@
 import './globals.css';
 import type { ReactNode } from 'react';
 import HeaderNav from './components/HeaderNav';
+import PageTransition from '../components/ui/PageTransition';
 
 export const metadata = {
   title: '33 F/T Studio',
   description: 'Reservas, membresías y marketing para 33 F/T Studio.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '33 F/T',
+  },
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#97A546',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -18,7 +28,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen bg-base text-slate-900">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
           <HeaderNav />
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </div>
       </body>
     </html>

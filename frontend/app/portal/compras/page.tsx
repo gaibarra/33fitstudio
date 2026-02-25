@@ -49,7 +49,7 @@ export default function Compras() {
   const [memberships, setMemberships] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [provider, setProvider] = useState('manual');
+  const [provider, setProvider] = useState('mercadopago');
   const [providerRef, setProviderRef] = useState('');
   const [userBookings, setUserBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -130,7 +130,7 @@ export default function Compras() {
     }
     try {
       setLoading(true);
-      await apiFetch('/api/commerce/orders/', {
+      const order = await apiFetch('/api/commerce/orders/', {
         method: 'POST',
         body: JSON.stringify({
           items: [{ product: selectedProductObj.id, quantity }],
@@ -138,6 +138,17 @@ export default function Compras() {
           provider_ref: providerRef || undefined,
         }),
       });
+
+      if (provider === 'mercadopago') {
+        const linkData = await apiFetch(`/api/commerce/orders/${order.id}/mp_link/`, {
+          method: 'POST',
+        });
+        if (linkData.init_point) {
+          window.location.href = linkData.init_point;
+          return; // Detener flujo para permitir el redirect
+        }
+      }
+
       await Swal.fire({
         icon: 'success',
         title: 'Orden creada',
@@ -284,6 +295,7 @@ export default function Compras() {
                     value={provider}
                     onChange={(e) => setProvider(e.target.value)}
                   >
+                    <option value="mercadopago">Mercado Pago (Tarjeta/OXXO)</option>
                     <option value="manual">Mostrador</option>
                     <option value="transferencia">Transferencia</option>
                     <option value="efectivo">Efectivo</option>
